@@ -49,7 +49,7 @@ var tokens;
 var authWindow;
 var spawn = require('child_process').spawn;
 
-var sfkey = JSON.parse(fs.readFileSync('key.json','utf-8')).key;
+var sfkey = (JSON.parse(fs.readFileSync('key.json','utf-8'))).key;
 
 // OAuth認証を行う
 // 認証用のウィンドウを開き、承認処理を行った後アクセストークンをもらう
@@ -313,6 +313,7 @@ function render(preview){
 }
 
 gui.Window.get().on('closed', function () {
+  alert('closed');
   viewModel.outputStr('');
   viewModel.input.inputAudioFile.value('');
   viewModel.isProcessing(false);
