@@ -1,0 +1,146 @@
+<% extend './template_base.html' %>
+<% block 'header-script' : %>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<!-- Latest compiled and minified JavaScript -->
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script type="text/javascript" src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/knockout/3.2.0/knockout-min.js"></script>
+<script type="text/javascript" src="./knockout.mapping-latest.debug.js"></script>
+<style>
+  html {
+    position: relative;
+    height: 100%;
+  }
+
+  body {
+    /* Margin bottom by footer height */
+    margin-top: 50px;
+    margin-bottom: 100px;
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    /* Set the fixed height of the footer here */
+    height: 60px;
+    background-color: #f5f5f5;
+  }
+
+  div#playerObj {
+    display: none;
+    position: absolute;
+  }
+
+  .thumbnail-title {
+    color: white;
+    position: absolute;
+    text-shadow: 1px 1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, -1px -1px 0 #000;
+    font-size: 14px;
+  }
+
+  #output {
+    border: none;
+    background: none;
+    background-color: transparent;
+    height: 480px;
+    overflow: auto;
+  }
+</style>
+<% end %>
+<% block 'header-content' : %>
+<% end %>
+<% block 'nav-content' : %>
+<p class="navbar-text navbar-text-sm navbar-right"><a id="homeLink" href="/" class="navbar-link"><span class="glyphicon glyphicon-home"></span>ホーム</a></p>
+<% end %>
+<% block 'article' : %>
+<div class="container">
+  <div class="navbar navbar-default">
+    <form class="navbar-form navbar-left">
+      <button type="submit" class="btn btn-default" id="upload" data-bind="enable: inputDataValidated,click:encodeAndUpload">アップロード</button>
+      <button type="submit" class="btn btn-default" id="render" data-bind="click:render">ファイル保存</button>
+      <button type="submit" class="btn btn-default" id="preview" data-bind="click:preview">プレビュー</button>
+    </form>
+  </div>
+  <ul class="nav nav-tabs" role="tablist">
+<% for tab in @tabs : %>
+    <li role="presentation" class="<%=tab?.class%>"><a href="#<%=tab.id%>" aria-controls="<%=tab.id%>" role="tab" data-toggle="tab"><%=tab.title%></a></li>
+<% end %>
+  </ul>
+  <div class="tab-content">
+<% for tab in @tabs : %>
+    <div role="tabpanel" class="tab-pane fade in <%=tab?.class%>" id="<%=tab.id%>">
+<% for contentParam in tab.contentParams :%>
+      <div class="panel panel-primary">
+        <div class="panel-heading"><%= contentParam.title %></div>
+          <div class="panel-body">
+            <div class="row">
+              <form>
+<% for key,param of contentParam.params.value : %>
+<% propName = "#{contentParam.params.name}.#{key}" %>
+<% propValue = "#{propName}.value" %>
+<% switch param.type : %>
+<%  when 'checkbox' : %>
+                <div class="form-group clearfix">
+                  <div class="<%= param?.labelLayout || contentParam?.labelLayout   %> ">
+                    <label for="<%= key %>"><%=param.label %></label>
+                  </div>
+                  <div class="<%= param?.controlLayout || contentParam?.controlLayout %> ">
+                    <input id="<%= key %>" type="<%= param.type%>" data-bind="checked:<%= propValue %>" />
+                  </div>
+                </div>
+<% end %>
+<% when 'file' : %>
+                <div class="form-group clearfix">
+                  <div class="<%= param?.labelLayout || contentParam?.labelLayout   %>">
+                    <label for="<%=key%>Button"><%=param.label %></label>
+                  </div>
+                  <div class="<%= param?.controlLayout || contentParam?.controlLayout %>">
+                    <button id="<%=key%>Button" type="button" class="btn btn-default" data-bind="click: function(d,e){ openFileDialog('#<%=key%>'); }">ファイル選択</button>
+                    <input type="file" id="<%=key%>" style="display:none" data-bind="value: <%=propValue%>"<%=param?.nwsaveas%> />
+                    <span class="help-text" data-bind="text: <%=propValue%>"></span>
+                  </div>
+                </div>
+<% end %>
+<% when 'output' : %>
+                <pre id="<%=key%>" data-bind="text:<%=propValue%>"></pre>
+<% end %>
+<% when 'select' : %>
+                <div class="form-group clearfix">
+                  <div class="<%= param?.labelLayout || contentParam?.labelLayout   %>">
+                    <label for="<%= key%>"><%=param.label %></label>
+                  </div>
+                  <div class="<%= param?.controlLayout || contentParam?.controlLayout %>">
+                    <select id="<%=key%>" class="form-control" data-bind="options:<%="#{propName}.options"%>,value:<%=propValue%>"></select>
+                  </div>
+                </div>
+<% end %>
+<% else : %>
+                <div class="form-group clearfix">
+                  <div class="<%= param?.labelLayout || contentParam?.labelLayout   %>">
+                    <label for="<%= key%>"><%=param.label %></label>
+                  </div>
+                  <div class="<%= param?.controlLayout || contentParam?.controlLayout %>">
+                    <input id="<%= key %>" type="<%= param?.type || 'text'%>" class="form-control" data-bind="value:<%= propValue%>" />
+                  </div>
+                </div>
+<% end %>
+<% end %>
+<% end %>
+              </form>
+            </div>
+          </div>
+        </div>
+<% end %>
+    </div>
+<% end %>
+  </div>
+</div>
+<% end %>
+<% block 'footer-content' : %>
+<% end %>
+<% block 'etc-content' : %>
+<script type="text/javascript" src="main.js"></script>
+<% end %>

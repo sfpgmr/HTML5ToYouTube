@@ -1,0 +1,30 @@
+{"header":"","title":"YouTube Uploader",
+  "description": "指定した音声ファイルと静止画をffmpegで動画化しYoutubeにアップロードします。",
+  "keywords": "Youtube,d3.js,Q.js,jquery",
+  "author": "sfpgmr",
+  "datetime": "",
+  "datestr": "",
+  "tabs": [
+    {
+      "title": "Main",
+      "id": "main",
+      "class": "active",
+      "contentParams": [ { "title": "コンソール出力", "params": { "name": "console", "value": "console" } } ]
+    },
+    {
+      "title": "FFMpeg",
+      "id": "ffmpeg",
+      "contentParams": [
+        { "title": "入力パラメータ", "labelLayout": "col-lg-1 col-md-3 col-sm-2 col-xs-6", "controlLayout": "col-lg-2 col-md-3 col-sm-4 col-xs-6", "params": { "name": "input", "value": "input" } },
+        { "title": "出力パラメータ", "labelLayout": "col-lg-1 col-md-3 col-sm-2 col-xs-6", "controlLayout": "col-lg-2 col-md-3 col-sm-4 col-xs-6", "params": { "name": "output", "value": "output" } }
+      ]
+    },
+    {
+      "title": "YouTube",
+      "id": "youtube",
+      "contentParams": [ 
+        { "title": "YouTube登録情報", "labelLayout": "col-lg-2 col-md-3 col-sm-2 col-xs-6", "controlLayout": "col-lg-10 col-md-9 col-sm-10 col-xs-6", "params": { "name": "youtube", "value": "youtube" } }
+      ]
+    }
+  ]
+}

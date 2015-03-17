@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html vocab="http://schema.org" lang="ja">
+<head>
+  <title>YouTube Uploader</title>
+  <meta charset="utf-8" />
+  <meta name="description" content="指定した音声ファイルと静止画をffmpegで動画化しYoutubeにアップロードします。" />
+  <meta name="keywords" content="Youtube,d3.js,Q.js,jquery" />
+  <meta name="author" content="sfpgmr" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<!-- Latest compiled and minified JavaScript -->
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script type="text/javascript" src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/knockout/3.2.0/knockout-min.js"></script>
+<script type="text/javascript" src="./knockout.mapping-latest.debug.js"></script>
+<style>
+  html {
+    position: relative;
+    height: 100%;
+  }
+
+  body {
+    /* Margin bottom by footer height */
+    margin-top: 50px;
+    margin-bottom: 100px;
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    /* Set the fixed height of the footer here */
+    height: 60px;
+    background-color: #f5f5f5;
+  }
+
+  div#playerObj {
+    display: none;
+    position: absolute;
+  }
+
+  .thumbnail-title {
+    color: white;
+    position: absolute;
+    text-shadow: 1px 1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, -1px -1px 0 #000;
+    font-size: 14px;
+  }
+
+  #output {
+    border: none;
+    background: none;
+    background-color: transparent;
+    height: 480px;
+    overflow: auto;
+  }
+</style>
+ 
+</head>
+<body>
+  <nav class="navbar navbar-default navbar-fixed-top " role="navigation">
+    <div class="container">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+          <button type="button" class="navbar-toggle navbar-toggle-sm collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+          </button>
+      </div>
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+          <div></div>
+        <p class="navbar-text navbar-text-sm navbar-right"><a id="homeLink" href="/" class="navbar-link"><span class="glyphicon glyphicon-home"></span>ホーム</a></p>
+      </div>
+    </div>
+  </nav>
+<article id="article" typeof="Article">
+    <header class="container"><h2>YouTube Uploader</h2>
+    <p>指定した音声ファイルと静止画をffmpegで動画化しYoutubeにアップロードします。</p>
+        </header>
+    <div class="container">
+  <div class="navbar navbar-default">
+    <form class="navbar-form navbar-left">
+      <button type="submit" class="btn btn-default" id="upload" data-bind="enable: inputDataValidated,click:encodeAndUpload">アップロード</button>
+      <button type="submit" class="btn btn-default" id="render" data-bind="click:render">ファイル保存</button>
+      <button type="submit" class="btn btn-default" id="preview" data-bind="click:preview">プレビュー</button>
+    </form>
+  </div>
+  <ul class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active"><a href="#main" aria-controls="main" role="tab" data-toggle="tab">Main</a></li>
+    <li role="presentation" class=""><a href="#ffmpeg" aria-controls="ffmpeg" role="tab" data-toggle="tab">FFMpeg</a></li>
+    <li role="presentation" class=""><a href="#youtube" aria-controls="youtube" role="tab" data-toggle="tab">YouTube</a></li>
+  </ul>
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane fade in active" id="main">
+      <div class="panel panel-primary">
+        <div class="panel-heading">コンソール出力</div>
+          <div class="panel-body">
+            <div class="row">
+              <form>
+                <pre id="output" data-bind="text:console.output.value"></pre>
+              </form>
+            </div>
+          </div>
+        </div>
+    </div>
+    <div role="tabpanel" class="tab-pane fade in " id="ffmpeg">
+      <div class="panel panel-primary">
+        <div class="panel-heading">入力パラメータ</div>
+          <div class="panel-body">
+            <div class="row">
+              <form>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="loop">loop</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="loop" type="text" class="form-control" data-bind="value:input.loop.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="f">f</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="f" type="text" class="form-control" data-bind="value:input.f.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="r">r(input)</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="r" type="text" class="form-control" data-bind="value:input.r.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="inputImageFile">画像/動画ファイル</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="inputImageFile" type="text" class="form-control" data-bind="value:input.inputImageFile.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="inputAudioFileButton">音声ファイル</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <button id="inputAudioFileButton" type="button" class="btn btn-default" data-bind="click: function(d,e){ openFileDialog('#inputAudioFile'); }">ファイル選択</button>
+                    <input type="file" id="inputAudioFile" style="display:none" data-bind="value: input.inputAudioFile.value" />
+                    <span class="help-text" data-bind="text: input.inputAudioFile.value"></span>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      <div class="panel panel-primary">
+        <div class="panel-heading">出力パラメータ</div>
+          <div class="panel-body">
+            <div class="row">
+              <form>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="ro">r(output)</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="ro" type="text" class="form-control" data-bind="value:output.ro.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="vcodec">vcodec</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="vcodec" type="text" class="form-control" data-bind="value:output.vcodec.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="b_v">b:v</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="b_v" type="text" class="form-control" data-bind="value:output.b_v.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="pass">pass</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="pass" type="text" class="form-control" data-bind="value:output.pass.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="crf">crf</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="crf" type="text" class="form-control" data-bind="value:output.crf.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="s">s</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="s" type="text" class="form-control" data-bind="value:output.s.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="fs">fs</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="fs" type="text" class="form-control" data-bind="value:output.fs.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="preset">preset</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="preset" type="text" class="form-control" data-bind="value:output.preset.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="tune">tune</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="tune" type="text" class="form-control" data-bind="value:output.tune.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="pix_fmt">pix_fmt</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="pix_fmt" type="text" class="form-control" data-bind="value:output.pix_fmt.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="movflags">movflags</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="movflags" type="text" class="form-control" data-bind="value:output.movflags.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="threads">threads</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="threads" type="text" class="form-control" data-bind="value:output.threads.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="acodec">acodec</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="acodec" type="text" class="form-control" data-bind="value:output.acodec.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="ab">ab</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="ab" type="text" class="form-control" data-bind="value:output.ab.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="ac">ac</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="ac" type="text" class="form-control" data-bind="value:output.ac.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="b_a">b:a</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="b_a" type="text" class="form-control" data-bind="value:output.b_a.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="q_a">q:a</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="q_a" type="text" class="form-control" data-bind="value:output.q_a.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="vbr">vbr</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="vbr" type="text" class="form-control" data-bind="value:output.vbr.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="ss">ss</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="ss" type="text" class="form-control" data-bind="value:output.ss.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="t">t</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="t" type="text" class="form-control" data-bind="value:output.t.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6 ">
+                    <label for="shortest">shortest</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6 ">
+                    <input id="shortest" type="checkbox" data-bind="checked:output.shortest.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="application">application</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <input id="application" type="text" class="form-control" data-bind="value:output.application.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-1 col-md-3 col-sm-2 col-xs-6">
+                    <label for="outputFileButton">出力ファイル</label>
+                  </div>
+                  <div class="col-lg-2 col-md-3 col-sm-4 col-xs-6">
+                    <button id="outputFileButton" type="button" class="btn btn-default" data-bind="click: function(d,e){ openFileDialog('#outputFile'); }">ファイル選択</button>
+                    <input type="file" id="outputFile" style="display:none" data-bind="value: output.outputFile.value"nwsaveas />
+                    <span class="help-text" data-bind="text: output.outputFile.value"></span>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+    </div>
+    <div role="tabpanel" class="tab-pane fade in " id="youtube">
+      <div class="panel panel-primary">
+        <div class="panel-heading">YouTube登録情報</div>
+          <div class="panel-body">
+            <div class="row">
+              <form>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6">
+                    <label for="title">タイトル</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6">
+                    <input id="title" type="text" class="form-control" data-bind="value:youtube.title.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6">
+                    <label for="description">説明</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6">
+                    <input id="description" type="text" class="form-control" data-bind="value:youtube.description.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6">
+                    <label for="tags">タグ</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6">
+                    <input id="tags" type="text" class="form-control" data-bind="value:youtube.tags.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6">
+                    <label for="categoryId">カテゴリー</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6">
+                    <input id="categoryId" type="text" class="form-control" data-bind="value:youtube.categoryId.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6">
+                    <label for="privacyStatus">公開範囲</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6">
+                    <select id="privacyStatus" class="form-control" data-bind="options:youtube.privacyStatus.options,value:youtube.privacyStatus.value"></select>
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6 ">
+                    <label for="embeddable">埋め込み可能</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6 ">
+                    <input id="embeddable" type="checkbox" data-bind="checked:youtube.embeddable.value" />
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6">
+                    <label for="license">ライセンス</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6">
+                    <select id="license" class="form-control" data-bind="options:youtube.license.options,value:youtube.license.value"></select>
+                  </div>
+                </div>
+                <div class="form-group clearfix">
+                  <div class="col-lg-2 col-md-3 col-sm-2 col-xs-6 ">
+                    <label for="publicStatsViewable">拡張統計情報を一般公開</label>
+                  </div>
+                  <div class="col-lg-10 col-md-9 col-sm-10 col-xs-6 ">
+                    <input id="publicStatsViewable" type="checkbox" data-bind="checked:youtube.publicStatsViewable.value" />
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+</article>
+  <footer id="footer" class="navbar navbar-default navbar-fixed-bottom">
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-3" property="creator" id="creator">
+          <div typeof="person" id="creatorPerson">
+            <span property="name" id="creatorName">By <a href="http://www.enoie.net/">S.F.</a></span>
+          </div>
+        </div>
+        <div class="col-xs-3 text-center"></div>
+        <div class="col-xs-6 text-right"><small><time id="date" property="dc:date" datetime="2015-03-17T11:39:46.268Z">2015-03-17T11:39:46.268Z</time></small></div>
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="main.js"></script>
+</body>
+</html>
